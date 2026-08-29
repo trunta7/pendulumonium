@@ -3,19 +3,16 @@ use rayon::prelude::*;
 use rtrb::Producer;
 use std::sync::Arc;
 
-pub struct OutputConfig {
-    pub frame_time: f64, // e.g., 1.0 / 60.0
-}
-
-pub struct SolverConfig {
+pub struct RunnerConfig {
     pub rtol: f64,
     pub atol: f64,
     pub initial_dt: f64,
     pub min_dt: f64,
     pub max_dt: f64,
+    pub frame_time: f64, // e.g., 1.0 / 60.0
 }
 
-impl Default for SolverConfig {
+impl Default for RunnerConfig {
     fn default() -> Self {
         Self {
             rtol: 1e-7,
@@ -23,6 +20,7 @@ impl Default for SolverConfig {
             initial_dt: 0.01,
             min_dt: 1e-9,
             max_dt: 0.1,
+            frame_time: 1.0/60.0,
         }
     }
 }
@@ -74,8 +72,7 @@ pub fn run_export(
     mut producers: Vec<Producer<Arc<Vec<State>>>>,
     initial_states: Vec<State>,
     params: PendulumParams,
-    config: OutputConfig,
-    solver_config: SolverConfig,
+    config: RunnerConfig,
 ) {
     // DOP853 Error Estimator Constants
     const ER1: f64 = 0.1312004499419488073250102996e-01;
@@ -89,7 +86,7 @@ pub fn run_export(
 
     let mut current_t = 0.0;
     let mut next_frame_time = 0.0;
-    let mut dt = solver_config.initial_dt;
+    let mut dt = config.initial_dt;
 
     let mut old_states = initial_states.clone();
     let mut current_states = initial_states;
@@ -132,16 +129,16 @@ pub fn run_export(
                 err_state = err_state.add(&k_vals[11].mul_scalar(dt * ER12));
 
                 let curr = current_states[i];
-                let scale_t1 = solver_config.atol + solver_config.rtol * curr.theta1.abs().max(candidate_state.theta1.abs());
+                let scale_t1 = config.atol + config.rtol * curr.theta1.abs().max(candidate_state.theta1.abs());
                 max_swarm_err = max_swarm_err.max((err_state.theta1 / scale_t1).abs());
 
-                let scale_t2 = solver_config.atol + solver_config.rtol * curr.theta2.abs().max(candidate_state.theta2.abs());
+                let scale_t2 = config.atol + config.rtol * curr.theta2.abs().max(candidate_state.theta2.abs());
                 max_swarm_err = max_swarm_err.max((err_state.theta2 / scale_t2).abs());
 
-                let scale_o1 = solver_config.atol + solver_config.rtol * curr.omega1.abs().max(candidate_state.omega1.abs());
+                let scale_o1 = config.atol + config.rtol * curr.omega1.abs().max(candidate_state.omega1.abs());
                 max_swarm_err = max_swarm_err.max((err_state.omega1 / scale_o1).abs());
 
-                let scale_o2 = solver_config.atol + solver_config.rtol * curr.omega2.abs().max(candidate_state.omega2.abs());
+                let scale_o2 = config.atol + config.rtol * curr.omega2.abs().max(candidate_state.omega2.abs());
                 max_swarm_err = max_swarm_err.max((err_state.omega2 / scale_o2).abs());
             }
 
@@ -158,10 +155,10 @@ pub fn run_export(
                 f_current = swarm_results.iter().map(|(_, f_new)| *f_new).collect();
 
                 current_t += dt_taken;
-                dt = (dt * dt_factor).clamp(solver_config.min_dt, solver_config.max_dt);
+                dt = (dt * dt_factor).clamp(config.min_dt, config.max_dt);
             } else {
                 dt *= dt_factor;
-                if dt < solver_config.min_dt {
+                if dt < config.min_dt {
                     panic!("solver diverged, target dt fell below min_dt threshold.");
                 }
             }
