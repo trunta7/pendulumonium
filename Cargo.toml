@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 eframe = "0.35.0"
+enum-map = "2.7.3"
 minifb = "0.28.0"
 rayon = "1.12.0"
 rtrb = "0.4.0"

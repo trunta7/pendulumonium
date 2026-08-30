@@ -1,5 +1,7 @@
 use rtrb::{Consumer, RingBuffer};
+use enum_map::{enum_map, Enum, EnumMap};
 
+use crate::app_state::ActivePanel::SimulationPanel;
 use crate::app_state::Exports::RenderExport;
 use crate::rk8solver::{State, PendulumParams};
 use crate::runner::{self, RunnerConfig};
@@ -9,18 +11,34 @@ use std::collections::HashSet;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
+use std::time::Duration;
 
 const RING_SIZE: usize = 60;
 
-#[derive(PartialEq, Eq, Hash)]
+#[derive(Enum, PartialEq, Eq, Hash)]
 pub enum Exports {
     RenderExport,
 }
+
+#[derive(PartialEq)]
+pub enum ActivePanel {
+    SimulationPanel,
+    RenderExportPanel,
+}
+impl Default for ActivePanel {
+    fn default() -> Self {
+        SimulationPanel
+    }
+}
 pub struct AppState {
+    // gui state
+    pub active_panel: ActivePanel, // currently active panel to display
+
+    // sim/settings state
 	pub initial_pendulums: Vec<State>, // vector of initial pends to simulate
     pub pendulum_params: PendulumParams, // params of pendulums
 	pub runner_config: RunnerConfig, // config of runner
-    pub exports: HashSet<Exports>, // vec of selected exports
+    pub exports: EnumMap<Exports, bool>, // map of exports to bool vals
 	pub render_export_config: render_export::RenderExportConfig, // config of the render export
 	pub stop_flag: Arc<AtomicBool>, // stop flag to stop export threads
 }
@@ -28,10 +46,14 @@ pub struct AppState {
 impl Default for AppState {
     fn default() -> Self {
         Self { 
+            active_panel: SimulationPanel,
+
             initial_pendulums: vec![State{theta1:1.0, theta2:1.0, omega1:0.0, omega2:0.0}],
             pendulum_params: PendulumParams::default(),
             runner_config: RunnerConfig::default(), 
-            exports: HashSet::from([RenderExport]),
+            exports: enum_map! {
+                RenderExport => false,
+            },
             render_export_config: render_export::RenderExportConfig::default(), 
             stop_flag: Arc::new(AtomicBool::new(false)),
         }
@@ -40,15 +62,19 @@ impl Default for AppState {
 
 impl AppState {
     pub fn start_simulation(&self) {
+        self.stop_flag.store(true, Ordering::Relaxed);
+        thread::sleep(Duration::from_millis(500));
         self.stop_flag.store(false, Ordering::Relaxed);
 
         let mut producers = Vec::new();
-        for exp in &self.exports {
-            let (producer, consumer) = RingBuffer::<Arc<Vec<State>>>::new(RING_SIZE);
-            producers.push(producer);
-            match exp {
-                RenderExport => {
-                    self.spawn_render_export(consumer);
+        for (exp, bool) in &self.exports {
+            if *bool {
+                let (producer, consumer) = RingBuffer::<Arc<Vec<State>>>::new(RING_SIZE);
+                producers.push(producer);
+                match exp {
+                    RenderExport => {
+                        self.spawn_render_export(consumer);
+                    }
                 }
             }
         }
