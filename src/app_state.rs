@@ -28,10 +28,10 @@ pub struct AppState {
 impl Default for AppState {
     fn default() -> Self {
         Self { 
-            initial_pendulums: Vec::new(),
+            initial_pendulums: vec![State{theta1:1.0, theta2:1.0, omega1:0.0, omega2:0.0}],
             pendulum_params: PendulumParams::default(),
             runner_config: RunnerConfig::default(), 
-            exports: HashSet::new(),
+            exports: HashSet::from([RenderExport]),
             render_export_config: render_export::RenderExportConfig::default(), 
             stop_flag: Arc::new(AtomicBool::new(false)),
         }
@@ -40,6 +40,8 @@ impl Default for AppState {
 
 impl AppState {
     pub fn start_simulation(&self) {
+        self.stop_flag.store(false, Ordering::Relaxed);
+
         let mut producers = Vec::new();
         for exp in &self.exports {
             let (producer, consumer) = RingBuffer::<Arc<Vec<State>>>::new(RING_SIZE);
