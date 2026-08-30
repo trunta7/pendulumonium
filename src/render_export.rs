@@ -7,12 +7,18 @@ use std::thread;
 #[derive(Clone, Copy)]
 pub struct RenderExportConfig {
 	pub n: usize, // number of pendulums to render from the selection
+    pub window_width: usize, // width of render window
+    pub window_height: usize, // height of render window
+    pub pixel_scale: f64, // pixels per unit of length
 }
 
 impl Default for  RenderExportConfig {
     fn default() -> Self {
         Self {
             n: 10,
+            window_width: 800,
+            window_height: 800,
+            pixel_scale: 100.0
         }
     }
 }
@@ -23,15 +29,13 @@ pub fn render_export(
     config: RenderExportConfig,
     stop_flag: Arc<std::sync::atomic::AtomicBool>,
 ) {
-    const WIDTH: usize = 800;
-    const HEIGHT: usize = 800;
 
     let n = config.n;
 
     let mut window = Window::new(
         "Double Pendulum Render - Press ESC to exit",
-        WIDTH,
-        HEIGHT,
+        config.window_width,
+        config.window_height,
         WindowOptions::default(),
     )
     .unwrap_or_else(|e| {
@@ -39,15 +43,14 @@ pub fn render_export(
     });
 
     window.set_target_fps(60);
-    let mut buffer: Vec<u32> = vec![0; WIDTH * HEIGHT];
+    let mut buffer: Vec<u32> = vec![0; config.window_width * config.window_height];
 
     // scale pendulum to provided lengths
-    let scale_px_per_meter = 100.0;
-    let l1 = params.length1 * scale_px_per_meter;
-    let l2 = params.length2 * scale_px_per_meter;
+    let l1 = params.length1 * config.pixel_scale;
+    let l2 = params.length2 * config.pixel_scale;
 
-    let cx = WIDTH as f64 / 2.0;
-    let cy = HEIGHT as f64 / 3.0;
+    let cx = config.window_width as f64 / 2.0;
+    let cy = config.window_height as f64 / 3.0;
 
     loop {
         if stop_flag.load(std::sync::atomic::Ordering::Relaxed) || !window.is_open() || window.is_key_down(Key::Escape) {
@@ -73,12 +76,12 @@ pub fn render_export(
                     let x2 = x1 + l2 * state.theta2.sin();
                     let y2 = y1 + l2 * state.theta2.cos();
 
-                    draw_line(&mut buffer, WIDTH, HEIGHT, cx as i32, cy as i32, x1 as i32, y1 as i32, 0x0033bb55);
-                    draw_line(&mut buffer, WIDTH, HEIGHT, x1 as i32, y1 as i32, x2 as i32, y2 as i32, 0x00bb3333);
-                    draw_pixel(&mut buffer, WIDTH, HEIGHT, x2 as i32, y2 as i32, 0x00ffffff);
+                    draw_line(&mut buffer, config.window_width, config.window_height, cx as i32, cy as i32, x1 as i32, y1 as i32, 0x0033bb55);
+                    draw_line(&mut buffer, config.window_width, config.window_height, x1 as i32, y1 as i32, x2 as i32, y2 as i32, 0x00bb3333);
+                    draw_pixel(&mut buffer, config.window_width, config.window_height, x2 as i32, y2 as i32, 0x00ffffff);
                 }
 
-                window.update_with_buffer(&buffer, WIDTH, HEIGHT).unwrap();
+                window.update_with_buffer(&buffer, config.window_width, config.window_height).unwrap();
             }
             Err(PopError::Empty) => {
                 if consumer.is_abandoned() {

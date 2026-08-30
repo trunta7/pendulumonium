@@ -2428,7 +2428,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pendulonium"
+name = "penduluonium"
 version = "0.1.0"
 dependencies = [
  "eframe",
