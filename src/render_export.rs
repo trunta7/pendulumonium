@@ -42,12 +42,12 @@ pub fn render_export(
     let mut buffer: Vec<u32> = vec![0; WIDTH * HEIGHT];
 
     // scale pendulum to provided lengths
-    let scale_px_per_meter = 150.0;
+    let scale_px_per_meter = 100.0;
     let l1 = params.length1 * scale_px_per_meter;
     let l2 = params.length2 * scale_px_per_meter;
 
     let cx = WIDTH as f64 / 2.0;
-    let cy = HEIGHT as f64 / 2.0;
+    let cy = HEIGHT as f64 / 3.0;
 
     loop {
         if stop_flag.load(std::sync::atomic::Ordering::Relaxed) || !window.is_open() || window.is_key_down(Key::Escape) {

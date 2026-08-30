@@ -18,10 +18,10 @@ pub enum Exports {
 }
 pub struct AppState {
 	pub initial_pendulums: Vec<State>, // vector of initial pends to simulate
+    pub pendulum_params: PendulumParams, // params of pendulums
 	pub runner_config: RunnerConfig, // config of runner
-	pub pendulum_params: PendulumParams, // params of pendulum
-	pub render_export_config: render_export::RenderExportConfig, // config of the render export
     pub exports: HashSet<Exports>, // vec of selected exports
+	pub render_export_config: render_export::RenderExportConfig, // config of the render export
 	pub stop_flag: Arc<AtomicBool>, // stop flag to stop export threads
 }
 
@@ -29,31 +29,16 @@ impl Default for AppState {
     fn default() -> Self {
         Self { 
             initial_pendulums: Vec::new(),
+            pendulum_params: PendulumParams::default(),
             runner_config: RunnerConfig::default(), 
-            pendulum_params: PendulumParams::default(), 
+            exports: HashSet::new(),
             render_export_config: render_export::RenderExportConfig::default(), 
             stop_flag: Arc::new(AtomicBool::new(false)),
-            exports: HashSet::new()
         }
     }
 }
 
 impl AppState {
-    pub fn spawn_render_export(&self, consumer: Consumer<Arc<Vec<State>>>) -> std::thread::JoinHandle<()> {
-        let pendulum_params = self.pendulum_params.clone();
-        let render_config = self.render_export_config.clone();
-        let stop_flag = self.stop_flag.clone();
-
-        thread::spawn(move || {
-            render_export::render_export(
-                consumer,
-                pendulum_params,
-                render_config,
-                stop_flag,
-            );
-        })
-    }
-
     pub fn start_simulation(&self) {
         let mut producers = Vec::new();
         for exp in &self.exports {
@@ -83,6 +68,18 @@ impl AppState {
         self.stop_flag.store(true, Ordering::Relaxed);
     }
 
+    fn spawn_render_export(&self, consumer: Consumer<Arc<Vec<State>>>) -> std::thread::JoinHandle<()> {
+        let pendulum_params = self.pendulum_params.clone();
+        let render_config = self.render_export_config.clone();
+        let stop_flag = self.stop_flag.clone();
 
-    
+        thread::spawn(move || {
+            render_export::render_export(
+                consumer,
+                pendulum_params,
+                render_config,
+                stop_flag,
+            );
+        })
+    }
 }
