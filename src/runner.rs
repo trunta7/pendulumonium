@@ -68,7 +68,7 @@ pub fn interpolate_swarm(
 }
 
 /// main execution loop supporting a swarm of pendulums and multiple consumers via Arc fan-out.
-pub fn run_export(
+pub fn run_export (
     mut producers: Vec<Producer<Arc<Vec<State>>>>,
     initial_states: Vec<State>,
     params: PendulumParams,
