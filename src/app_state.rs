@@ -23,6 +23,7 @@ pub enum Exports {
 #[derive(PartialEq)]
 pub enum ActivePanel {
     SimulationPanel,
+    SelectionPanel,
     RenderExportPanel,
 }
 impl Default for ActivePanel {
