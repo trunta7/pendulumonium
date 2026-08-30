@@ -6,6 +6,17 @@ pub struct PendulumParams {
     pub length2: f64,
     pub gravity: f64,
 }
+impl Default for PendulumParams {
+    fn default() -> Self {
+        Self { 
+            mass1: 1.0, 
+            mass2: 1.0, 
+            length1: 1.0, 
+            length2: 1.0, 
+            gravity: 9.8 
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub struct State {

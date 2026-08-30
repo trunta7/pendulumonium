@@ -1,6 +1,6 @@
-mod render_export;
 mod rk8solver;
 mod runner;
+mod render_export;
 
 use rtrb::RingBuffer;
 use std::sync::Arc;
@@ -29,7 +29,6 @@ fn main() {
         length2: 1.0,
         gravity: 2.0
     };
-    let pend_clone = pend_params.clone();
     let config = render_export::RenderExportConfig{
         n: 20,
     };
@@ -37,11 +36,11 @@ fn main() {
     let mut producers = Vec::new();
     let (producer, consumer) = RingBuffer::<Arc<Vec<rk8solver::State>>>::new(60);
     producers.push(producer);
-    thread::spawn(move || {render_export::render_export(consumer, pend_clone, config, stop_flag);});
+    thread::spawn(move || {render_export::render_export(consumer, &pend_params, config, stop_flag);});
 
     let config = runner::RunnerConfig::default();
     thread::spawn(move || {runner::run_export(producers, init_pends, pend_params, config);});
     loop {
-        
+
     }
 }

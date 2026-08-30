@@ -159,6 +159,7 @@ pub fn run_export (
             } else {
                 dt *= dt_factor;
                 if dt < config.min_dt {
+                    todo!();
                     panic!("solver diverged, target dt fell below min_dt threshold.");
                 }
             }
@@ -175,15 +176,15 @@ pub fn run_export (
                 interpolate_swarm(&old_states, &current_states, &f_old, &f_current, dt_taken, theta)
             };
 
-            // wrap frame in an Arc for zero-copy fan-out to multiple consumers
+            // wrap frame in an arc for zero-copy fan-out to multiple consumers
             let shared_frame = Arc::new(frame_states);
 
             producers.retain_mut(|producer| {
                 while producer.is_full() {
                     if producer.is_abandoned() {
-                        return false; // Remove abandoned consumer
+                        return false; // remove abandoned consumer
                     }
-                    std::thread::yield_now();
+                    std::thread::yield_now(); // wait for consumer to take from ringbuffer
                 }
 
                 if producer.is_abandoned() {
