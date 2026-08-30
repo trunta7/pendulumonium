@@ -3,13 +3,14 @@ use rayon::prelude::*;
 use rtrb::Producer;
 use std::sync::Arc;
 
+#[derive(Clone, Copy)]
 pub struct RunnerConfig {
     pub rtol: f64,
     pub atol: f64,
     pub initial_dt: f64,
     pub min_dt: f64,
     pub max_dt: f64,
-    pub frame_time: f64, // e.g., 1.0 / 60.0
+    pub frame_time: f64,
 }
 
 impl Default for RunnerConfig {
@@ -160,7 +161,7 @@ pub fn run_export (
                 dt *= dt_factor;
                 if dt < config.min_dt {
                     todo!();
-                    panic!("solver diverged, target dt fell below min_dt threshold.");
+                    // panic!("solver diverged, target dt fell below min_dt threshold.");
                 }
             }
         }

@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Clone, Copy)]
 pub struct PendulumParams {
     pub mass1: f64,
     pub mass2: f64,

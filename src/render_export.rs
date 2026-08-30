@@ -4,6 +4,7 @@ use rtrb::{Consumer, PopError};
 use std::sync::Arc;
 use std::thread;
 
+#[derive(Clone, Copy)]
 pub struct RenderExportConfig {
 	pub n: usize, // number of pendulums to render from the selection
 }
@@ -18,7 +19,7 @@ impl Default for  RenderExportConfig {
 
 pub fn render_export(
     mut consumer: Consumer<Arc<Vec<State>>>,
-    params: &PendulumParams,
+    params: PendulumParams,
     config: RenderExportConfig,
     stop_flag: Arc<std::sync::atomic::AtomicBool>,
 ) {
