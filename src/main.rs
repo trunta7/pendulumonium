@@ -1,11 +1,11 @@
 mod app_state;
+mod selector;
 mod rk8solver;
 mod runner;
 mod render_export;
 
-use std::{collections::HashSet, thread, time::Duration}; // tmp
 use app_state::{AppState, Exports, ActivePanel};
-use eframe::{App, egui};
+use eframe::egui;
 
 use crate::{render_export::RenderExportConfig, rk8solver::PendulumParams, runner::RunnerConfig};
 
@@ -17,6 +17,7 @@ impl eframe::App for AppState {
         // top panel selector panel, handles choosing the current settings to display
         self.display_panel_selector(ui);
 
+        // central active panel
         match self.active_panel {
             ActivePanel::SimulationPanel => {
                 self.display_simulation_panel(ui);
@@ -160,26 +161,5 @@ impl AppState {
 
 fn main() {
     let native_options = eframe::NativeOptions::default();
-    let _ = eframe::run_native("My egui App", native_options, Box::new(|cc| Ok(Box::new(AppState::default()))));
-
-    /*
-    let mut init_pends: Vec<rk8solver::State> = Vec::new();
-    for i in 0..20 {
-        init_pends.push(rk8solver::State { 
-            omega1: i as f64 * 0.1, 
-            omega2: i as f64 * 0.1, 
-            theta1: 0.0, 
-            theta2: 0.0, 
-        });
-    }
-
-    let mut state = AppState::default();
-    state.initial_pendulums = init_pends;
-    state.exports = HashSet::from([Exports::RenderExport]);
-    state.pendulum_params.gravity = 2.0;
-    state.start_simulation();
-    thread::sleep(Duration::from_secs(10));
-    state.stop_simulation();
-    thread::sleep(Duration::from_secs(2));
-    */
+    let _ = eframe::run_native("My egui App", native_options, Box::new(|_cc| Ok(Box::new(AppState::default()))));
 }

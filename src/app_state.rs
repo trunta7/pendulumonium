@@ -6,8 +6,8 @@ use crate::app_state::Exports::RenderExport;
 use crate::rk8solver::{State, PendulumParams};
 use crate::runner::{self, RunnerConfig};
 use crate::render_export;
+use crate::selector::{self, Selector};
 
-use std::collections::HashSet;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
@@ -34,6 +34,7 @@ impl Default for ActivePanel {
 pub struct AppState {
     // gui state
     pub active_panel: ActivePanel, // currently active panel to display
+    pub selector: selector::Selector, // handles active selection
 
     // sim/settings state
 	pub initial_pendulums: Vec<State>, // vector of initial pends to simulate
@@ -47,7 +48,8 @@ pub struct AppState {
 impl Default for AppState {
     fn default() -> Self {
         Self { 
-            active_panel: SimulationPanel,
+            active_panel: ActivePanel::default(),
+            selector: Selector::default(),
 
             initial_pendulums: vec![State{theta1:1.0, theta2:1.0, omega1:0.0, omega2:0.0}],
             pendulum_params: PendulumParams::default(),
