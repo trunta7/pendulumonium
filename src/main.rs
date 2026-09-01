@@ -5,9 +5,11 @@ mod runner;
 mod render_export;
 
 use app_state::{AppState, Exports, ActivePanel};
-use eframe::egui;
+use eframe::egui::{self, Pos2, Rect};
 
-use crate::{render_export::RenderExportConfig, rk8solver::PendulumParams, runner::RunnerConfig};
+use crate::{render_export::RenderExportConfig, rk8solver::PendulumParams, runner::RunnerConfig, selector::PointSelector};
+
+const SEL_WIDTH: f32 = 200.0;
 
 impl eframe::App for AppState {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
@@ -134,7 +136,72 @@ impl AppState {
     fn display_selection_panel(&mut self, ui: &mut egui::Ui) {
         egui::CentralPanel::default().show(ui, |ui| {
             ui.heading("Selection :)");
+
+            ui.horizontal(|ui| {
+                ui.selectable_value(
+                    &mut self.selector.active, selector::ActiveSelector::RectSel, "Rectangle Selection"
+                );
+                ui.selectable_value(
+                    &mut self.selector.active, selector::ActiveSelector::PointSel, "Point Selection"
+                );
+            });
+
+            let desired_size = egui::vec2(SEL_WIDTH, SEL_WIDTH);
+            let (rect, response) = ui.allocate_exact_size(desired_size, egui::Sense::click());
+            ui.painter().rect_filled(rect, 1.0, egui::Color32::from_rgb(60, 60, 60));
+
+            if response.clicked() {
+                if let Some(pointer_pos) = response.interact_pointer_pos() {
+                    let relative_pos = pointer_pos - rect.min;
+                    println!("Relative click position: {:?}", relative_pos);
+                    let scaled_pos = (relative_pos / SEL_WIDTH).to_pos2();
+                    self.selector.add_selection(scaled_pos);
+                }
+            }
+
+            match self.selector.active {
+                selector::ActiveSelector::RectSel => self.display_rectangle_selection(ui, rect),
+                selector::ActiveSelector::PointSel => self.display_point_selection(ui, rect),
+            }
         });
+    }
+
+    fn display_rectangle_selection(&mut self, ui: &mut egui::Ui, rect: Rect) {
+        let min = scaled_pos_to_absolute_pos(self.selector.get_points()[0], rect);
+        let max = scaled_pos_to_absolute_pos(self.selector.get_points()[1], rect);
+        let absolute_box = egui::Rect::from_min_max(min, max,);
+
+        let clipped_painter = ui.painter_at(rect);
+        clipped_painter.rect(
+            absolute_box,
+            2.0, // Corner rounding radius
+            egui::Color32::from_rgba_unmultiplied(0, 120, 255, 60), // Translucent blue (R, G, B, A)
+            egui::Stroke::new(2.0, egui::Color32::from_rgb(0, 180, 255)), // Solid border stroke
+            egui::StrokeKind::Inside
+        );
+
+        ui.add(
+            egui::Slider::new(&mut self.selector.rect.width, (2..=2000)).step_by(2.0).text("Width")
+        ).on_hover_text("Number of pendulums to render on the width of the selection");
+
+        if ui.button("Reset to default").clicked() {
+            self.selector.rect = selector::RectSelector::default();
+        }
+    }
+
+    fn display_point_selection(&mut self, ui: &mut egui::Ui, rect: Rect) {
+        for point in self.selector.get_points() {
+            let pos = scaled_pos_to_absolute_pos(point, rect);
+                ui.painter().circle_filled(
+                pos,
+                1.0, // Radius in points
+                egui::Color32::LIGHT_BLUE,
+            );
+        }
+
+        if ui.button("Reset to default").clicked() {
+            self.selector.point = PointSelector::default();
+        }
     }
 
     fn display_render_export_panel(&mut self, ui: &mut egui::Ui) {
@@ -157,6 +224,10 @@ impl AppState {
             }
         });
     }
+}
+
+fn scaled_pos_to_absolute_pos(scaled_pos: Pos2, rect: Rect) -> Pos2 {
+    (scaled_pos * SEL_WIDTH) + rect.min.to_vec2()
 }
 
 fn main() {

@@ -37,7 +37,6 @@ pub struct AppState {
     pub selector: selector::Selector, // handles active selection
 
     // sim/settings state
-	pub initial_pendulums: Vec<State>, // vector of initial pends to simulate
     pub pendulum_params: PendulumParams, // params of pendulums
 	pub runner_config: RunnerConfig, // config of runner
     pub exports: EnumMap<Exports, bool>, // map of exports to bool vals
@@ -51,7 +50,6 @@ impl Default for AppState {
             active_panel: ActivePanel::default(),
             selector: Selector::default(),
 
-            initial_pendulums: vec![State{theta1:1.0, theta2:1.0, omega1:0.0, omega2:0.0}],
             pendulum_params: PendulumParams::default(),
             runner_config: RunnerConfig::default(), 
             exports: enum_map! {
@@ -82,13 +80,14 @@ impl AppState {
             }
         }
 
-        let initial_pends = self.initial_pendulums.clone();
+
+        let init_pends = self.selector.get_selection();
         let pend_params = self.pendulum_params.clone();
         let runner_config = self.runner_config.clone();
         thread::spawn(move || {
             runner::run_export(
                 producers, 
-                initial_pends, 
+                init_pends, 
                 pend_params, 
                 runner_config
             );
